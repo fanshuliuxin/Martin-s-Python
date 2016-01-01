@@ -1,0 +1,63 @@
+__author__ = '99119'
+# -*- coding:utf8 -*-
+#file:tcpserver.py
+
+import socket
+import datetime
+import sys
+import threading
+#datetime.datetime.now() require system time
+bufsize = 1024
+host = ''
+port = 8282
+address = (host,port)
+
+class SocketThread(threading.Thread):
+    def __init__(self,conn):
+        threading.Thread.__init__(self)
+        self.socket_conn = conn
+    def run(self):
+        #infinite loop so that function do not terminate and thread do not end.
+        while True:
+            try:
+               #Receiving from client
+               data = self.socket_conn.recv(1024)
+               reply = data.decode()
+               print("Server received the data<--- %s at %s" %(reply,datetime.datetime.now()))
+               if not data:
+                  break
+               send_data = "thread name: "+self.name+", Data:"+reply
+               self.socket_conn.sendall(send_data.encode(encoding="utf-8"))
+               print("Server Sending data---> %s at %s"%(send_data,datetime.datetime.now()))
+            except socket.error as e:
+               print("Communication Lost :% s" %e)
+               sys.exit()
+            #came out of loop
+        self.socket_conn.close()
+
+def main():
+    server_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server_sock .setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    print("Socket created successfully at %s "% datetime.datetime.now())
+    try:
+       server_sock.bind(address)
+       print("IP address & Listening port:(%s,%s)" %(host,port))
+    except socket.error as msg:
+       print("Sockte bind failed. Error Code : %s, Message %s" %(str(msg[0]),str[1]))
+       sys.exit()
+    print("Socket bind complete at %s"%datetime.datetime.now())
+    server_sock.listen(1)
+    print("Socket now listening...")
+    #Function for handling connections. This will be used to create threads
+    while True:
+           print('waiting for connection...' )
+           conn,addr = server_sock.accept()
+           print('Connected with %s :%s at %s' %(addr[0],str(addr[1]),datetime.datetime.now()))
+           #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
+           #start_new_thread(clientthread ,(conn,))
+           my_thread = SocketThread(conn)
+           my_thread.start()
+    server_sock.close()
+
+if __name__ == "__main__":
+    main()
